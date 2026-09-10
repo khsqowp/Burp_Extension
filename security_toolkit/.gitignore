@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+scanner-data/db/*.sqlite
+scanner-data/results/
+scanner-data/logs/

@@ -1,0 +1,9 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+httpx==0.28.1
+
+# spec §53 Docker 책임: 감싸는 외부 스캐너 스크립트들의 의존성도 여기 포함
+# (Docker 이미지가 "Scanner Libraries"까지 자체 완결적으로 갖는다는 원칙).
+PyYAML>=6.0
+cryptography>=41.0

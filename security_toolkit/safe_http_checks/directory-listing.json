@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "directory-listing",
+  "name_ko": "파일 목록화 가능성",
+  "description_ko": "대상 경로의 HTML 본문에서 주요 웹 서버의 디렉터리 인덱스 서명을 찾습니다.",
+  "origin": ["ProjectDiscovery directory-listing template concepts", "locally curated signatures"],
+  "external_network": false,
+  "limits": {"max_requests": 1, "requests_per_second": 1.0, "max_concurrency": 1, "timeout_seconds": 10, "max_redirects": 0},
+  "requests": [
+    {"method": "GET", "path": "/", "send_credentials": false}
+  ],
+  "detections": [
+    {"id": "generic-index-of", "severity": "low", "status": [200], "content_type_contains_ci": "text/html", "body_contains_any_ci": ["<title>index of /", "<h1>index of /", "directory listing for /"], "message_ko": "웹 디렉터리의 파일 목록이 노출되어 백업 파일이나 비공개 파일이 발견될 수 있습니다."},
+    {"id": "iis-directory-listing", "severity": "low", "status": [200], "content_type_contains_ci": "text/html", "body_contains_all_ci": ["directory listing", "parent directory"], "message_ko": "IIS 계열 디렉터리 목록 페이지가 노출된 것으로 보입니다."}
+  ],
+  "negative_controls": {"require_body_signature": true, "do_not_treat_status_alone_as_finding": true}
+}

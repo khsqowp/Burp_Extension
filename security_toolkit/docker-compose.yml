@@ -1,0 +1,25 @@
+# spec §38: 진단 데이터는 Docker 생명주기와 분리된 Host 파일시스템에 저장
+# (scanner-data/ bind mount) -- `docker compose down` 이후에도 살아남는다.
+# spec §54: Scanner API는 127.0.0.1에서만 접근 가능해야 한다 -- 컨테이너
+# 내부는 0.0.0.0으로 바인딩하되(Dockerfile CMD), 호스트에 노출하는 포트
+# 매핑 자체를 "127.0.0.1:8000:8000"으로 제한해 실제 접근 경계를 강제한다.
+services:
+  scanner-core:
+    build:
+      context: ./scanner-core
+      additional_contexts:
+        tools_root: .. # lets the Dockerfile COPY --from=tools_root sibling tool scripts (e.g. ssl_tls_scanner)
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./scanner-data:/app/tools/security_toolkit/scanner-data
+    environment:
+      - SCANNER_DATA_DIR=/app/tools/security_toolkit/scanner-data
+      - NO_PROXY=*
+      - no_proxy=*
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped

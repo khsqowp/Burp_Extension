@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Security Toolkit — Result Viewer</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #161922; --panel2: #1d212c; --border: #2a2f3a;
+    --text: #e6e8ec; --muted: #8b93a3; --accent: #4f8cff;
+    --high: #ff5470; --medium: #ffb648; --low: #4fd1c5; --info: #8b93a3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Pretendard, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; cursor: pointer; }
+  header h1:hover { color: var(--accent); }
+  header .sub { color: var(--muted); font-size: 12px; }
+  .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 49px); }
+  nav { border-right: 1px solid var(--border); padding: 14px; overflow-y: auto; }
+  nav h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; }
+  .target-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .target-item:hover, .target-item.active { background: var(--panel2); }
+  main { padding: 20px; overflow-y: auto; }
+  .crumbs { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .crumbs a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .card .num { font-size: 24px; font-weight: 700; }
+  .card .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  section h3 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; }
+  tr:hover td { background: var(--panel2); }
+  .status { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+  .status-completed { background: #14361f; color: #5fdc7a; }
+  .status-skipped { background: var(--panel2); color: var(--muted); }
+  .status-failed { background: #3a1620; color: var(--high); }
+  .status-running, .status-pending { background: #33280f; color: var(--medium); }
+  .status-cancelled { background: var(--panel2); color: var(--muted); }
+  .sev { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .sev-high { background: #3a1620; color: var(--high); }
+  .sev-medium { background: #33280f; color: var(--medium); }
+  .sev-low, .sev-info { background: #123430; color: var(--low); }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+  code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  .clickable-row { cursor: pointer; }
+
+  /* 전체화면 모달 -- Issue는 핵심 필드만, Raw Results는 원본 전체를 보여준다 */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 1000; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    width: 100%; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .modal-header h3 { margin: 0; font-size: 14px; font-weight: 600; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+  .modal-close:hover, .modal-close:focus-visible { color: var(--text); background: var(--panel2); outline: none; }
+  .modal-body { padding: 20px; overflow: auto; flex: 1; }
+  .modal-body h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 6px; }
+  .modal-body h4:first-child { margin-top: 0; }
+  .modal-body pre { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 0; }
+  .finding-list { display: flex; flex-direction: column; gap: 10px; }
+  .finding-item { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .finding-item .fi-head { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .finding-item .fi-title { font-weight: 600; font-size: 13px; }
+  .finding-item .fi-detail { color: var(--muted); font-size: 12.5px; white-space: pre-wrap; word-break: break-word; margin-top: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 onclick="renderDashboard()" title="메인 화면으로">Security Toolkit — Result Viewer</h1>
+  <span class="sub" id="apiStatus">connecting...</span>
+</header>
+<div class="layout">
+  <nav>
+    <h2>Scans</h2>
+    <div id="targetList" class="empty">불러오는 중...</div>
+  </nav>
+  <main>
+    <div class="crumbs" id="crumbs"></div>
+    <div id="view"></div>
+  </main>
+</div>
+<div id="modalOverlay" class="modal-overlay" onclick="if (event.target === this) closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modalTitle"></h3>
+      <button class="modal-close" onclick="closeModal()" aria-label="닫기" title="닫기 (Esc)">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+<script>
+const state = { targets: [], scans: [], selectedScan: null, currentFindings: [], currentTasks: [], currentTechnologies: [] };
+
+async function api(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`${path} -> ${r.status}`);
+  return r.json();
+}
+
+function sevClass(sev) { return `sev sev-${sev}`; }
+function statusClass(st) { return `status status-${st}`; }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+
+// API가 주는 UTC ISO 문자열("2026-09-06T03:44:54.530348+00:00")을 화면에서만
+// 브라우저 로컬 시간대로 "연-월-일 시:분:초(요일)" 형식으로 바꿔 보여준다.
+// API 응답 자체는 그대로 ISO -- 여기서 화면 표시용으로만 가공한다.
+const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+function fmtTime(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return esc(iso);
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} `
+       + `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}(${WEEKDAYS_KO[d.getDay()]})`;
+}
+
+// -- 전체화면 모달 (spec review finding 2026-09-06: Issues/Raw Results가
+// 테이블 한 줄로만 요약돼 있어서 상세 내용이나 원본 결과를 보려면 서버
+// 파일시스템을 직접 열어야 했다) -----------------------------------------
+function showModal(title, bodyHtml) {
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalBody").innerHTML = bodyHtml;
+  document.getElementById("modalOverlay").classList.add("open");
+}
+function closeModal() {
+  document.getElementById("modalOverlay").classList.remove("open");
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+// Issue 클릭 -> 핵심 필드만 (원본 findings 배열은 이미 받아온 상태라 서버를
+// 다시 부를 필요 없음)
+function openFindingModal(i) {
+  const f = state.currentFindings[i];
+  if (!f) return;
+  const rows = [
+    ["Severity", f.severity], ["Scanner", f.scanner], ["Finding", f.finding],
+    ["설명 / 예상 피해", f.description || "-"],
+    ["Host", f.host || "-"], ["Port", f.port ?? "-"], ["Protocol", f.protocol || "-"],
+    ["Service", f.service || "-"], ["Technology", f.technology || "-"],
+    ["Timestamp", f.timestamp ? fmtTime(f.timestamp) : "-"], ["Evidence", f.evidence || "-"],
+  ];
+  const body = `<table><tbody>${rows.map(([k, v]) =>
+    `<tr><th style="width:130px">${esc(k)}</th><td>${esc(String(v))}</td></tr>`).join("")}</tbody></table>`;
+  showModal(`Issue -- ${f.finding}`, body);
+}
+
+// Issue 모달과 Module/Technology 모달이 공유하는 렌더러 -- "무엇이 왜
+// 취약한지"를 finding(무엇)+evidence(왜/근거) 조합으로 카드 목록으로 보여준다.
+function renderFindingList(findings) {
+  if (findings.length === 0) return `<div class="empty">해당하는 이슈 없음 -- 양호</div>`;
+  return `<div class="finding-list">${findings.map(f => `
+    <div class="finding-item">
+      <div class="fi-head">
+        <span class="${sevClass(f.severity)}">${esc(f.severity)}</span>
+        <span class="fi-title">${esc(f.finding)}</span>
+      </div>
+      ${f.host ? `<div class="fi-detail">Host: ${esc(f.host)}${f.port ? ":" + f.port : ""}</div>` : ""}
+      ${f.description ? `<div class="fi-detail"><strong>설명 / 예상 피해:</strong> ${esc(f.description)}</div>` : ""}
+      ${f.evidence ? `<div class="fi-detail">${esc(f.evidence)}</div>` : ""}
+    </div>`).join("")}</div>`;
+}
+
+// Modules(Tasks) 클릭 -> 이 모듈이 발견한 이슈만 정리해서 보여준다 (핵심 요약).
+// 원본 전체를 보고 싶으면 아래쪽 Raw Results 행을 따로 클릭해야 한다 -- 두
+// 섹션의 역할을 "핵심(Modules)" / "전체 원본(Raw Results)"으로 분리한다.
+function openModuleSummaryModal(taskId) {
+  const t = state.currentTasks.find(x => x.id === taskId);
+  if (!t) return;
+  const findings = state.currentFindings.filter(f => f.task_id === taskId);
+  let body = `<table><tbody>
+    <tr><th style="width:130px">Module</th><td>${esc(t.module)}</td></tr>
+    <tr><th>Status</th><td><span class="${statusClass(t.status)}">${esc(t.status)}</span></td></tr>
+    <tr><th>Start</th><td>${t.start_time ? fmtTime(t.start_time) : "-"}</td></tr>
+    <tr><th>End</th><td>${t.end_time ? fmtTime(t.end_time) : "-"}</td></tr>
+    ${t.error ? `<tr><th>Error</th><td>${esc(t.error)}</td></tr>` : ""}
+  </tbody></table>`;
+  body += `<h4>발견된 이슈 (${findings.length})</h4>${renderFindingList(findings)}`;
+  showModal(`Module 요약 -- ${t.module}`, body);
+}
+
+// Technologies 클릭 -> 탐지된 제품/버전 정보 + 그 기술 때문에 CVE/EOL
+// Matcher가 만들어낸 연관 Finding들 (cve_matcher/eol_matcher는 Finding.technology를
+// "{product} {version}" 형식으로 채운다 -- Technology 레코드와 동일한 조합으로
+// 맞춰서 연관 이슈를 찾는다).
+function openTechnologyModal(i) {
+  const t = state.currentTechnologies[i];
+  if (!t) return;
+  const label = `${t.product} ${t.version || ""}`.trim();
+  const related = state.currentFindings.filter(f => f.technology === label);
+  let body = `<table><tbody>
+    <tr><th style="width:130px">Product</th><td>${esc(t.product)}</td></tr>
+    <tr><th>Version</th><td>${esc(t.version || "-")}</td></tr>
+    <tr><th>Category</th><td>${esc(t.category || "-")}</td></tr>
+    <tr><th>Host</th><td>${esc(t.host || "-")}${t.port ? ":" + t.port : ""}</td></tr>
+    <tr><th>Source</th><td>${esc(t.source_scanner || "-")}</td></tr>
+    <tr><th>CPE</th><td>${(t.cpe && t.cpe.length) ? t.cpe.map(esc).join("<br>") : "-"}</td></tr>
+    <tr><th>Evidence</th><td>${esc(t.evidence || "-")}</td></tr>
+  </tbody></table>`;
+  body += `<h4>이 기술 때문에 발견된 이슈 (${related.length})</h4>${renderFindingList(related)}`;
+  showModal(`Technology -- ${t.product}`, body);
+}
+
+// 모듈 Raw Results 클릭 -> 서버가 실제로 저장한 원본 파일(result/stderr/meta)
+// 전체를 그대로 보여준다 (요약 없음, 이 모달만은 "전체"가 원칙)
+async function openTaskRawModal(taskId, moduleName) {
+  showModal(`Raw Results -- ${moduleName}`, `<div class="empty">불러오는 중...</div>`);
+  try {
+    const raw = await api(`/tasks/${taskId}/raw`);
+    let body = "";
+    if (raw.result) body += `<h4>result.json</h4><pre>${esc(raw.result)}</pre>`;
+    if (raw.stderr) body += `<h4>stderr.txt</h4><pre>${esc(raw.stderr)}</pre>`;
+    if (raw.meta) body += `<h4>meta.json</h4><pre>${esc(raw.meta)}</pre>`;
+    document.getElementById("modalBody").innerHTML = body || `<div class="empty">저장된 원본 없음</div>`;
+  } catch (e) {
+    document.getElementById("modalBody").innerHTML = `<div class="empty">불러오기 실패 -- ${esc(e.message)}</div>`;
+  }
+}
+
+function setCrumbs(parts) {
+  const el = document.getElementById("crumbs");
+  el.innerHTML = parts.map((p, i) =>
+    i === parts.length - 1 ? esc(p.label) : `<a onclick="${p.onclick}">${esc(p.label)}</a> / `
+  ).join("");
+}
+
+async function loadAll() {
+  document.getElementById("apiStatus").textContent = "connecting...";
+  try {
+    await api("/health");
+    document.getElementById("apiStatus").textContent = "connected";
+  } catch (e) {
+    document.getElementById("apiStatus").textContent = "API 연결 실패";
+    return;
+  }
+  state.targets = await api("/targets");
+  state.scans = await api("/scans");
+  renderTargetList();
+  renderDashboard();
+}
+
+// spec review finding (2026-09-06): 도메인별로 묶어서 보여주던 사이드바는
+// 어제 한 번 스캔한 도메인과 방금 막 스캔한 도메인이 뒤섞여 어디를 봐야
+// 할지 알기 어려웠다 -- 도메인 그룹 자체를 없애고 모든 Scan을 최신순으로
+// 그냥 쭉 나열한다. 클릭하면 바로 그 Scan 상세로 이동.
+function renderTargetList() {
+  const el = document.getElementById("targetList");
+  if (state.scans.length === 0) { el.innerHTML = `<div class="empty">등록된 Scan 없음</div>`; return; }
+  el.innerHTML = "";
+  el.className = "";
+  const sorted = [...state.scans].sort((a, b) => (b.start_time || "").localeCompare(a.start_time || ""));
+  for (const s of sorted) {
+    const div = document.createElement("div");
+    div.className = "target-item" + (state.selectedScan === s.id ? " active" : "");
+    div.title = fmtTime(s.start_time);
+    div.innerHTML = `<span>${esc(s.scope_host || s.target)}</span><span class="${statusClass(s.status)}">${esc(s.status)}</span>`;
+    div.onclick = () => openScan(s.id);
+    el.appendChild(div);
+  }
+}
+
+// -- Dashboard (spec §15/§45) -------------------------------------------------
+function renderDashboard() {
+  state.selectedScan = null;
+  renderTargetList();
+  setCrumbs([{ label: "Dashboard" }]);
+  const totalIssuesPromise = Promise.all(state.scans.map(s => api(`/issues?scan_id=${s.id}`)));
+  const view = document.getElementById("view");
+  view.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  totalIssuesPromise.then(allIssues => {
+    const flat = allIssues.flat();
+    const bySeverity = { high: 0, medium: 0, low: 0, info: 0 };
+    for (const f of flat) bySeverity[f.severity] = (bySeverity[f.severity] || 0) + 1;
+    const recent = [...state.scans].sort((a, b) => (b.start_time || "").localeCompare(a.start_time || "")).slice(0, 8);
+    view.innerHTML = `
+      <div class="cards">
+        <div class="card"><div class="num">${state.targets.length}</div><div class="label">등록된 Target</div></div>
+        <div class="card"><div class="num">${state.scans.length}</div><div class="label">전체 Scan</div></div>
+        <div class="card"><div class="num">${flat.length}</div><div class="label">발견된 Issue</div></div>
+        <div class="card"><div class="num" style="color:var(--high)">${bySeverity.high}</div><div class="label">High</div></div>
+        <div class="card"><div class="num" style="color:var(--medium)">${bySeverity.medium}</div><div class="label">Medium</div></div>
+      </div>
+      <section>
+        <h3>최근 Scan</h3>
+        ${recent.length === 0 ? `<div class="empty">아직 Scan 없음</div>` : `
+        <table><thead><tr><th>Target</th><th>시작</th><th>상태</th></tr></thead><tbody>
+          ${recent.map(s => `<tr style="cursor:pointer" onclick="openScan('${s.id}')">
+            <td>${esc(s.scope_host || s.target)}</td><td>${fmtTime(s.start_time)}</td>
+            <td><span class="${statusClass(s.status)}">${esc(s.status)}</span></td>
+          </tr>`).join("")}
+        </tbody></table>`}
+      </section>
+    `;
+  });
+}
+
+// -- Scan 상세 (spec §48-49) --------------------------------------------------
+async function openScan(scanId) {
+  state.selectedScan = scanId;
+  renderTargetList();
+  setCrumbs([{ label: "Dashboard", onclick: "renderDashboard()" }, { label: `Scan ${scanId}` }]);
+  const view = document.getElementById("view");
+  view.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  const [results, technologies, summary] = await Promise.all([
+    api(`/scans/${scanId}/results`), api(`/technologies?scan_id=${scanId}`),
+    api(`/scans/${scanId}/summary`),
+  ]);
+  const { scan, tasks, findings } = results;
+  state.currentTasks = tasks;
+  state.currentFindings = findings;
+  state.currentTechnologies = technologies;
+
+  const overviewHtml = `
+    <section>
+      <h3>Overview</h3>
+      <table><tbody>
+        <tr><th>Scan ID</th><td><code>${esc(scan.id)}</code></td></tr>
+        <tr><th>Target</th><td>${esc(scan.target)}</td></tr>
+        <tr><th>Status</th><td><span class="${statusClass(scan.status)}">${esc(scan.status)}</span></td></tr>
+        <tr><th>진단 판정</th><td>${esc(summary.overall)}</td></tr>
+        <tr><th>모듈 집계</th><td>완료 ${summary.module_counts.completed || 0} / 비적용 ${summary.module_counts.skipped || 0} / 실패 ${summary.module_counts.failed || 0} / 취소 ${summary.module_counts.cancelled || 0}</td></tr>
+        <tr><th>Start</th><td>${fmtTime(scan.start_time)}</td></tr>
+        <tr><th>End</th><td>${scan.end_time ? fmtTime(scan.end_time) : "-"}</td></tr>
+        <tr><th>Result Dir</th><td><code>${esc(scan.result_dir)}</code></td></tr>
+      </tbody></table>
+    </section>`;
+
+  const tasksHtml = `
+    <section>
+      <h3>Modules (Tasks)</h3>
+      ${tasks.length === 0 ? `<div class="empty">실행된 모듈 없음</div>` : `
+      <table><thead><tr><th>Module</th><th>Status</th><th>Start</th><th>End</th><th>Error</th></tr></thead><tbody>
+        ${tasks.map(t => `<tr class="clickable-row" onclick="openModuleSummaryModal('${t.id}')">
+          <td>${esc(t.module)}</td><td><span class="${statusClass(t.status)}">${esc(t.status)}</span></td>
+          <td>${t.start_time ? fmtTime(t.start_time) : "-"}</td><td>${t.end_time ? fmtTime(t.end_time) : "-"}</td>
+          <td>${esc(t.error || "")}</td>
+        </tr>`).join("")}
+      </tbody></table>`}
+    </section>`;
+
+  const findingsHtml = `
+    <section>
+      <h3>Issues (${findings.length})</h3>
+      ${findings.length === 0 ? `<div class="empty">발견된 Issue 없음</div>` : `
+      <table><thead><tr><th>Severity</th><th>Scanner</th><th>Finding</th><th>설명 / 예상 피해</th><th>Host:Port</th><th>Evidence</th></tr></thead><tbody>
+        ${findings.map((f, i) => `<tr class="clickable-row" onclick="openFindingModal(${i})">
+          <td><span class="${sevClass(f.severity)}">${esc(f.severity)}</span></td>
+          <td>${esc(f.scanner)}</td><td>${esc(f.finding)}</td><td>${esc(f.description || "-")}</td>
+          <td>${esc(f.host)}${f.port ? ":" + f.port : ""}</td>
+          <td>${esc(f.evidence)}</td>
+        </tr>`).join("")}
+      </tbody></table>`}
+    </section>`;
+
+  const techHtml = `
+    <section>
+      <h3>Technologies (${technologies.length})</h3>
+      ${technologies.length === 0 ? `<div class="empty">탐지된 Technology 없음</div>` : `
+      <table><thead><tr><th>Product</th><th>Version</th><th>Category</th><th>Source</th><th>Host:Port</th></tr></thead><tbody>
+        ${technologies.map((t, i) => `<tr class="clickable-row" onclick="openTechnologyModal(${i})">
+          <td>${esc(t.product)}</td><td>${esc(t.version)}</td><td>${esc(t.category)}</td>
+          <td>${esc(t.source_scanner)}</td><td>${esc(t.host)}${t.port ? ":" + t.port : ""}</td>
+        </tr>`).join("")}
+      </tbody></table>`}
+    </section>`;
+
+  const rawHtml = `
+    <section>
+      <h3>Raw Results</h3>
+      ${tasks.filter(t => t.result_file).length === 0 ? `<div class="empty">저장된 원본 결과 없음</div>` : `
+      <table><thead><tr><th>Module</th><th>Path</th></tr></thead><tbody>
+        ${tasks.filter(t => t.result_file).map(t => `<tr class="clickable-row" onclick="openTaskRawModal('${t.id}', '${esc(t.module)}')">
+          <td>${esc(t.module)}</td><td><code>${esc(t.result_file)}</code></td>
+        </tr>`).join("")}
+      </tbody></table>`}
+    </section>`;
+
+  view.innerHTML = overviewHtml + tasksHtml + findingsHtml + techHtml + rawHtml;
+}
+
+loadAll();
+</script>
+</body>
+</html>

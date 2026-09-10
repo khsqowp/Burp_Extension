@@ -1,0 +1,35 @@
+# PyInstaller Windows version-resource file (spec: 단일 EXE 휴대용 배포 §10
+# "빌드 결과에 버전 정보, 제품명, 파일 설명을 포함한다"). Consumed via
+# build.py's --version-file flag; has no effect on non-Windows builds.
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0),
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          u'040904B0',
+          [
+            StringStruct(u'CompanyName', u'Proxy Scanner (개인 프로젝트)'),
+            StringStruct(u'FileDescription', u'Proxy Scanner -- 개인용 패시브 트래픽 분석기'),
+            StringStruct(u'FileVersion', u'1.0.0.0'),
+            StringStruct(u'InternalName', u'proxy_scanner'),
+            StringStruct(u'LegalCopyright', u'개인 사용 목적, 무단 배포 금지'),
+            StringStruct(u'OriginalFilename', u'proxy_scanner.exe'),
+            StringStruct(u'ProductName', u'Proxy Scanner'),
+            StringStruct(u'ProductVersion', u'1.0.0.0'),
+          ],
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])]),
+  ],
+)

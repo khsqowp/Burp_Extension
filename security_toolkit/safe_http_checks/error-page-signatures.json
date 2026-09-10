@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "error-page-signatures",
+  "name_ko": "오류 페이지 정보 노출",
+  "description_ko": "존재하지 않는 임의 경로의 오류 응답에서 서버 제품명, 프레임워크명, 스택 추적 또는 내부 경로 노출을 찾습니다.",
+  "origin": ["OWASP WSTG-CONF-02", "Nmap http-errors concepts", "locally curated signatures"],
+  "external_network": false,
+  "limits": {"max_requests": 2, "requests_per_second": 1.0, "max_concurrency": 1, "timeout_seconds": 10, "max_redirects": 0},
+  "requests": [
+    {"method": "GET", "path": "/__security_toolkit_not_found_{random_token}__", "send_credentials": false},
+    {"method": "HEAD", "path": "/__security_toolkit_not_found_{random_token}__", "send_credentials": false}
+  ],
+  "detections": [
+    {"id": "nginx-default-error", "severity": "low", "status": [400, 403, 404, 405, 500, 502, 503, 504], "body_contains_all_ci": ["<hr><center>nginx</center>"], "message_ko": "nginx 기본 오류 페이지가 노출되어 서버 제품을 식별할 수 있습니다."},
+    {"id": "apache-default-error", "severity": "low", "status": [400, 403, 404, 405, 500], "body_contains_any_ci": ["apache server at", "<address>apache/"], "message_ko": "Apache 기본 오류 페이지 또는 버전 정보가 노출될 수 있습니다."},
+    {"id": "tomcat-default-error", "severity": "low", "status": [400, 403, 404, 405, 500], "body_contains_all_ci": ["type status report", "apache tomcat"], "message_ko": "Tomcat 기본 오류 페이지가 노출되어 제품 또는 버전을 식별할 수 있습니다."},
+    {"id": "iis-detailed-error", "severity": "medium", "status": [400, 403, 404, 405, 500], "body_contains_any_ci": ["detailed error information", "iis web core"], "message_ko": "IIS 상세 오류 정보가 노출되어 내부 구성 파악에 이용될 수 있습니다."},
+    {"id": "spring-whitelabel", "severity": "low", "status": [400, 403, 404, 405, 500], "body_contains_all_ci": ["whitelabel error page"], "message_ko": "Spring Boot 기본 오류 페이지가 노출되어 사용 프레임워크를 식별할 수 있습니다."},
+    {"id": "stack-trace", "severity": "medium", "status": [400, 403, 404, 405, 500], "body_regex_ci": ["(?:exception|traceback)(?:\\s|<[^>]+>){0,20}(?:at\\s+[a-z_$][\\w.$]+\\(|file \\\"[/a-z]:)"] , "message_ko": "오류 응답에 스택 추적이나 내부 파일 경로가 포함되어 구현 정보가 노출될 수 있습니다."}
+  ],
+  "negative_controls": {"compare_get_and_head": true, "ignore_empty_body": true, "do_not_treat_status_alone_as_finding": true}
+}

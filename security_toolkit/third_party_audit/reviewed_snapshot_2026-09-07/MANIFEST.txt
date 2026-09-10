@@ -1,0 +1,39 @@
+Security Toolkit 외부 진단 규칙 검토 스냅샷
+작성일: 2026-09-07
+
+목적
+- 외부 저장소 업데이트 내용을 자동 실행하지 않는다.
+- 이 디렉터리의 파일 내용과 SHA-256이 모두 일치할 때만 통합 후보로 취급한다.
+- 원본 저장소 디렉터리는 참고 자료이며 실행 입력으로 사용하지 않는다.
+
+출처 커밋
+- nuclei-templates: 9c896aebeb5fd19fa7ce3f1b01603b775e54f803
+- nmap: 08312c289b74551e49d5fd51e54d9d3f18f53ac9
+- nikto: 312645d873478a77986627ab1fc8cffe595e85d4 (실행 금지, 참고용)
+
+파일 및 SHA-256
+- directory-listing.yaml: B9A29F180D3D04BD20CCFA634ECAC607C5B132DCF6AC37FB536A0788B0F0FF3C
+- http-errors.nse: 4CC59E1BCE202C108C4CD805EF194EBB749991430B4E55C5C9F5F6DF64D0AAE9
+- http-headers.nse: 75D1B2C7425037849A6129B7F39833967BEE0867B6B000380998AE0650818672
+- http-methods.nse: 4745B3768BC27D5D059423AF3DB68A965AB8F9F70B1781ECC89DA8E7A95C5BCB
+- http-missing-security-headers.yaml: AB5591F7CB6E25D5448C9CCEC0D02B5EA81085F3C6FE79BCCF0D97236E35D7B6
+- http-security-headers.nse: DC1C8F50258B1AEFDC92FE9C1F16B7535A80961CCD94FBA1CA109BF582454D6E
+- http-server-header.nse: F5E7E6F0399F285246AB3E3BA31E47E45F3DA0EE713DC09D6BA9B6E1C8A33220
+
+실행 등급
+- 허용 후보: directory-listing.yaml (GET), http-missing-security-headers.yaml (GET), http-headers.nse (HEAD/실패 시 GET), http-security-headers.nse (HEAD), http-server-header.nse (GET).
+- 조건부 허용: http-methods.nse. test-all 및 retest 인자를 금지하고 루트 또는 명시한 읽기 전용 경로에만 사용한다.
+- 기본 실행 제외: http-errors.nse. 최대 40페이지를 크롤링하는 intrusive 스크립트이므로 중앙 요청 수와 속도 제한을 강제하기 전에는 실행하지 않는다.
+- 실행 금지: Nikto 전체 프로그램 및 DB. 기본 버전 확인 외부 통신과 선택적 CIRT 제출 경로가 존재한다.
+
+업데이트 승인 규칙
+1. upstream 업데이트는 별도 디렉터리에만 받는다.
+2. 기존 스냅샷을 덮어쓰지 않는다.
+3. method가 POST, PUT, DELETE, PATCH인지 검사한다.
+4. interactsh, oast, callback, webhook, telemetry, update URL을 검사한다.
+5. dos, fuzz, intrusive, race, rce, sqli, ssrf, upload 태그를 검사한다.
+6. 파일별 diff를 사람이 승인한 뒤 새 날짜 스냅샷과 새 SHA-256을 만든다.
+7. Manifest 불일치 또는 미등록 파일은 실행을 거부한다.
+
+주의
+- 이 파일은 현재 검토 결과를 보존하는 문서이며, 아직 프로그램의 강제 실행 게이트로 연결되지는 않았다.

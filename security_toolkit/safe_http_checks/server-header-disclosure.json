@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "server-header-disclosure",
+  "name_ko": "서버 헤더정보 노출",
+  "description_ko": "응답 헤더에서 서버, 프레임워크 및 런타임 제품명이나 상세 버전 노출을 확인합니다.",
+  "origin": ["Nmap http-headers concepts", "OWASP information disclosure guidance"],
+  "external_network": false,
+  "limits": {"max_requests": 1, "requests_per_second": 1.0, "max_concurrency": 1, "timeout_seconds": 10, "max_redirects": 0},
+  "requests": [
+    {"method": "HEAD", "path": "/", "send_credentials": false}
+  ],
+  "detections": [
+    {"id": "product-header", "severity": "info", "headers_ci": ["server", "x-powered-by", "x-aspnet-version", "x-aspnetmvc-version", "x-generator", "x-runtime"], "message_ko": "응답 헤더가 서버 또는 애플리케이션 제품 정보를 노출하여 공격 표면 식별에 도움을 줄 수 있습니다."},
+    {"id": "detailed-version-header", "severity": "low", "headers_ci": ["server", "x-powered-by", "x-aspnet-version", "x-aspnetmvc-version"], "value_regex_ci": ["(?:^|[/\\s])v?\\d+\\.\\d+(?:\\.\\d+){0,3}"], "message_ko": "응답 헤더에 상세 제품 버전이 노출되어 알려진 취약점 탐색에 이용될 수 있습니다."}
+  ],
+  "negative_controls": {"preserve_raw_header_value": true, "do_not_claim_vulnerability_from_product_name_alone": true}
+}

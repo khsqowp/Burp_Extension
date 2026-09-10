@@ -1,0 +1,6 @@
+services:
+  scanner-core:
+    image: security_toolkit-scanner-core:latest
+    pull_policy: never
+    volumes:
+      - ../runtime-data:/app/tools/security_toolkit/scanner-data

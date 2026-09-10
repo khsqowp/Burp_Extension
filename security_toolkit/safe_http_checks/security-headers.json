@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "security-headers",
+  "name_ko": "취약한 보안설정",
+  "description_ko": "기본 문서의 응답에서 주요 HTTP 보안 헤더 누락과 명백히 약한 값을 점검합니다.",
+  "origin": ["OWASP Secure Headers Project", "Nmap http-security-headers concepts", "ProjectDiscovery missing-header template concepts"],
+  "external_network": false,
+  "limits": {"max_requests": 1, "requests_per_second": 1.0, "max_concurrency": 1, "timeout_seconds": 10, "max_redirects": 0},
+  "requests": [
+    {"method": "HEAD", "path": "/", "send_credentials": false}
+  ],
+  "detections": [
+    {"id": "missing-content-security-policy", "severity": "low", "missing_header_ci": "content-security-policy", "message_ko": "Content-Security-Policy가 없어 브라우저 측 콘텐츠 실행 제한이 충분하지 않을 수 있습니다."},
+    {"id": "missing-frame-protection", "severity": "low", "missing_headers_all_ci": ["x-frame-options", "content-security-policy"], "message_ko": "프레임 삽입 제한 헤더가 없어 클릭재킹 방어가 충분하지 않을 수 있습니다."},
+    {"id": "missing-nosniff", "severity": "low", "missing_header_ci": "x-content-type-options", "message_ko": "X-Content-Type-Options가 없어 브라우저 MIME 추론으로 의도하지 않은 콘텐츠가 실행될 가능성이 있습니다."},
+    {"id": "missing-referrer-policy", "severity": "info", "missing_header_ci": "referrer-policy", "message_ko": "Referrer-Policy가 없어 외부 요청에 불필요한 경로 정보가 전달될 수 있습니다."},
+    {"id": "missing-hsts-on-https", "severity": "low", "when_scheme": "https", "missing_header_ci": "strict-transport-security", "message_ko": "HTTPS 응답에 HSTS가 없어 사용자가 HTTP로 재접속할 때 다운그레이드 공격에 노출될 수 있습니다."},
+    {"id": "weak-csp-script", "severity": "info", "header_ci": "content-security-policy", "value_contains_any_ci": ["'unsafe-inline'", "'unsafe-eval'"], "message_ko": "CSP가 unsafe-inline 또는 unsafe-eval을 허용하여 스크립트 실행 제한 효과가 약해질 수 있습니다."}
+  ],
+  "negative_controls": {"hsts_only_applies_to_https": true, "missing_header_is_configuration_finding_not_exploit_proof": true}
+}

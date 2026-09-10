@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "allowed-methods",
+  "name_ko": "Client Request Method 점검",
+  "description_ko": "OPTIONS 응답의 Allow 및 Public 헤더만 분석하며 상태 변경 메서드를 실제 실행하지 않습니다.",
+  "origin": ["OWASP WSTG-CONF-06", "Nmap http-methods concepts"],
+  "external_network": false,
+  "limits": {"max_requests": 1, "requests_per_second": 1.0, "max_concurrency": 1, "timeout_seconds": 10, "max_redirects": 0},
+  "requests": [
+    {"method": "OPTIONS", "path": "/", "send_credentials": false}
+  ],
+  "detections": [
+    {
+      "id": "risky-method-advertised",
+      "severity": "medium",
+      "inspect_headers_ci": ["allow", "public"],
+      "risky_values_ci": ["TRACE", "TRACK", "PUT", "DELETE", "PATCH", "CONNECT", "PROPFIND", "PROPPATCH", "MKCOL", "COPY", "MOVE", "LOCK", "UNLOCK"],
+      "message_ko": "서버가 상태 변경 또는 정보 반사 가능성이 있는 HTTP 메서드를 허용 목록에 노출합니다. 실제 사용 가능 여부는 별도 수동 확인이 필요합니다."
+    }
+  ],
+  "negative_controls": {"never_retest_advertised_methods": true, "never_send_state_changing_methods": true, "absence_of_allow_is_inconclusive": true}
+}

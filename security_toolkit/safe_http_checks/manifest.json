@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "bundle_id": "security-toolkit-safe-http-checks",
+  "bundle_version": "2026.09.07.1",
+  "auto_update": false,
+  "network_scope": "target-origin-only",
+  "files": {
+    "allowed-methods.json": "dcac55eb81f85e923b60043625cdc2199e214e0802d4feb3dee44f78ab094121",
+    "directory-listing.json": "5c3eba1ef5b75850d95704a2430fe5e7681b25c74cc5bb5271b035a2065b5a2b",
+    "error-page-signatures.json": "83550b1396e4f543ad4bb2d974fea48e73ceed22d5dd1e0bfc5705bed9827fe7",
+    "security-headers.json": "0482a10ae40adf3f8e9c5f376718cc67ab624c84fb005350a93709dcaccdb0aa",
+    "server-header-disclosure.json": "e7a585d49b29e0714754ddbc362842c28f4fffbe2b0805a14fef6377d5d355ad"
+  }
+}
